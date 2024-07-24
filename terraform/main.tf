@@ -26,6 +26,8 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_task_definition" "app" {
+  depends_on = ["aws_ecr_repository.main"]
+
   family                   = "msd-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
