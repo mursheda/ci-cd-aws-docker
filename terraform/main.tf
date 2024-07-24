@@ -50,7 +50,7 @@ resource "aws_ecs_service" "main" {
   desired_count   = 1
   launch_type     = "EC2"
   network_configuration {
-    subnets         = data.aws_subnets.default.id
+    subnets         = data.aws_subnets.default.ids
     security_groups = [data.aws_security_group.default.id]
   }
 }
@@ -58,7 +58,7 @@ resource "aws_ecs_service" "main" {
 resource "aws_instance" "ecs_instance" {
   ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI
   instance_type = "t2.micro"
-  subnet_id     = data.aws_subnets.default.id
+  subnet_id     = data.aws_subnets.default.ids
   security_groups = [data.aws_security_group.default.id]
 
   user_data = <<-EOF
