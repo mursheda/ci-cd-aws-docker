@@ -17,6 +17,10 @@ data "aws_security_group" "default" {
   }
 }
 
+resource "aws_ecr_repository" "main" {
+  name = "msd-app"
+}
+
 resource "aws_ecs_cluster" "main" {
   name = "msd-cluster"
 }
