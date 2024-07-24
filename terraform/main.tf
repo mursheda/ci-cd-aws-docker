@@ -12,7 +12,7 @@ data "aws_subnets" "default" {
 data "aws_security_group" "default" {
   vpc_id = data.aws_vpc.default.id
   filter {
-    name   = "msd-group-name"
+    name   = "group-name"
     values = ["default"]
   }
 }
