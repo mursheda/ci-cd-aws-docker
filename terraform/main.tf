@@ -1,50 +1,53 @@
-resource "aws_s3_bucket" "buckets" {
-  count  = min(length(var.s3_bucket_names), 2)
-  bucket = var.s3_bucket_names[count.index]
+data "aws_vpc" "default" {
+  default = true
+}
 
-  tags = {
-    Name        = "dev bucket"
-    Environment = "Development"
-    Owner       = "Mursheda"
+data "aws_subnet_ids" "default" {
+  vpc_id = data.aws_vpc.default.id
+}
+
+data "aws_security_group" "default" {
+  vpc_id = data.aws_vpc.default.id
+  filter {
+    name   = "msd-group-name"
+    values = ["default"]
   }
 }
 
-resource "aws_kms_key" "kmskey" {
-  description             = "This key is used to encrypt bucket objects"
-  deletion_window_in_days = 10
+resource "aws_ecs_cluster" "main" {
+  name = "msd-cluster"
 }
 
-resource "aws_s3_bucket" "bucket3" {
-  bucket = var.s3_bucket_names[2]
-  tags = {
-    Team        = "Engineering"
-    Environment = "Dev"
-    Owner       = "Mursheda"
-  }
-}
-resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.bucket3.bucket
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-resource "aws_s3_bucket_server_side_encryption_configuration" "aws_kms_key" {
-  bucket = aws_s3_bucket.bucket3.bucket
+resource "aws_ecs_task_definition" "app" {
+  family                   = "msd-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
 
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.kmskey.arn
-      sse_algorithm     = "aws:kms"
-    }
-  }
+  container_definitions = jsonencode([{
+    name  = "msd-app"
+    image = "${aws_ecr_repository.main.repository_url}:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 3000
+      hostPort      = 3000
+    }]
+  }])
 }
 
-resource "aws_s3_bucket" "bucket4" {
-  bucket = "dev-bucket-asdfmm-test"
-  
-  tags = {
-    Team        = "Engineering"
-    Environment = "Dev"
-    Owner       = "Mursheda"
+resource "aws_ecs_service" "main" {
+  name            = "msd-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  network_configuration {
+    subnets         = data.aws_subnet_ids.default.ids
+    security_groups = [data.aws_security_group.default.id]
   }
+}
+
+resource "aws_ecr_repository" "main" {
+  name = "msd-app"
 }
