@@ -2,8 +2,11 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "default" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
 }
 
 data "aws_security_group" "default" {
@@ -43,7 +46,7 @@ resource "aws_ecs_service" "main" {
   desired_count   = 1
   launch_type     = "EC2"
   network_configuration {
-    subnets         = data.aws_subnet_ids.default.ids
+    subnets         = data.aws_subnets.default.id
     security_groups = [data.aws_security_group.default.id]
   }
 }
@@ -51,7 +54,7 @@ resource "aws_ecs_service" "main" {
 resource "aws_instance" "ecs_instance" {
   ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI
   instance_type = "t2.micro"
-  subnet_id     = data.aws_subnet_ids.default.ids
+  subnet_id     = data.aws_subnets.default.id
   security_groups = [data.aws_security_group.default.id]
 
   user_data = <<-EOF
