@@ -21,7 +21,7 @@ resource "aws_ecs_cluster" "main" {
 resource "aws_ecs_task_definition" "app" {
   family                   = "msd-task"
   network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
 
@@ -41,13 +41,21 @@ resource "aws_ecs_service" "main" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
+  launch_type     = "EC2"
   network_configuration {
     subnets         = data.aws_subnet_ids.default.ids
     security_groups = [data.aws_security_group.default.id]
   }
 }
 
-resource "aws_ecr_repository" "main" {
-  name = "msd-app"
+resource "aws_instance" "ecs_instance" {
+  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI
+  instance_type = "t2.micro"
+  subnet_id     = data.aws_subnet_ids.default.ids
+  security_groups = [data.aws_security_group.default.id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              echo ECS_CLUSTER=${aws_ecs_cluster.main.name} >> /etc/ecs/ecs.config
+              EOF
 }
