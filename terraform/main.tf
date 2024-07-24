@@ -17,7 +17,8 @@ data "aws_security_group" "default" {
   }
 }
 
-resource "aws_ecr_repository" "main" {
+# Use an existing ECR repository
+data "aws_ecr_repository" "existing" {
   name = "msd-app"
 }
 
@@ -36,7 +37,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([{
     name  = "msd-app"
-    image = "${aws_ecr_repository.main.repository_url}:latest"
+    image = "${aws_ecr_repository.existing.repository_url}:latest"
     essential = true
     portMappings = [{
       containerPort = 3000
