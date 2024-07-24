@@ -27,8 +27,6 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_task_definition" "app" {
-  depends_on = ["aws_ecr_repository.main"]
-
   family                   = "msd-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
@@ -37,7 +35,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([{
     name  = "msd-app"
-    image = "${aws_ecr_repository.existing.repository_url}:latest"
+    image = "${data.aws_ecr_repository.existing.repository_url}:latest"
     essential = true
     portMappings = [{
       containerPort = 3000
